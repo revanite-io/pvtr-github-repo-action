@@ -1,4 +1,4 @@
-name: 'OSPS Security Assessment'
+name: 'Open Source Project Security Baseline Scanner'
 description: 'Run Open Source Project Security Baseline assessments on your GitHub repository'
 author: 'Revanite'
 
