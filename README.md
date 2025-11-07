@@ -36,9 +36,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Run OSPS Security Assessment
-        uses: revanite-io/pvtr-github-repo-action@main
-        with:
+    - name: Open Source Project Security Baseline Scanner
+      uses: revanite-io/osps-baseline-action@v1.0.0
+      with:
           owner: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
           token: ${{ secrets.PVTR_GITHUB_TOKEN }}
