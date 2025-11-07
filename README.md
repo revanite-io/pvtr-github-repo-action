@@ -1,6 +1,6 @@
-# pvtr-github-repo-action
+# GitHub Action for OSPS Baseline
 
-GitHub Action for running OSPS (Open Source Project Security) Baseline assessments on your GitHub repository. This action evaluates your repository against security controls defined in the [Open Source Project Security Baseline](https://baseline.openssf.org) and can optionally upload results to GitHub's Security tab as SARIF files.
+This repo provides a GitHub Action for running OSPS (Open Source Project Security) Baseline assessments on your GitHub repository. This action evaluates your repository against security controls defined in the [Open Source Project Security Baseline](https://baseline.openssf.org) and can optionally upload results to GitHub's Security tab as SARIF files.
 
 ## Features
 
