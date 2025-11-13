@@ -36,14 +36,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-    - name: Open Source Project Security Baseline Scanner
-      uses: revanite-io/osps-baseline-action@v1.0.0
-      with:
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          token: ${{ secrets.PVTR_GITHUB_TOKEN }}
-          catalog: "osps-baseline"
-          upload-sarif: "true"
+      - name: Open Source Project Security Baseline Scanner
+        uses: revanite-io/osps-baseline-action@v1.0.0
+        with:
+            owner: ${{ github.repository_owner }}
+            repo: ${{ github.event.repository.name }}
+            token: ${{ secrets.PVTR_GITHUB_TOKEN }}
+            catalog: "osps-baseline"
+            upload-sarif: "true"
       
       - name: Upload Assessment Results
         if: always()
