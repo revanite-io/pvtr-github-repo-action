@@ -120,3 +120,11 @@ runs:
         sarif_file: ${{ steps.sarif.outputs.sarif_file }}
         wait-for-processing: true
       continue-on-error: true
+
+    - name: Cleanup temporary config file
+      shell: bash
+      if: always()
+      run: |
+        if [ -f /tmp/pvtr-config.yml ]; then
+          rm -f /tmp/pvtr-config.yml
+        fi
