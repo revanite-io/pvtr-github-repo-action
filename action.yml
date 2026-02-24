@@ -28,6 +28,10 @@ inputs:
     description: "Upload results as SARIF to GitHub Security tab. When true, output-format is automatically set to sarif"
     required: false
     default: "false"
+  fail-on-error:
+    description: "Fail the workflow if any controls have errors. When false, results are reported but the step always passes"
+    required: false
+    default: "false"
 
 outputs:
   results-path:
@@ -93,10 +97,26 @@ runs:
         OWNER: ${{ inputs.owner }}
         REPO: ${{ inputs.repo }}
         CATALOG: ${{ inputs.catalog }}
+        FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
       run: |
         LOG_FILE=$(find evaluation_results -name "*.log" -type f 2>/dev/null | head -1)
         if [ -z "$LOG_FILE" ] || [ ! -f "$LOG_FILE" ]; then
           echo "No log file found, skipping workflow summary"
+          exit 0
+        fi
+
+        # Parse control results from the log first to determine if we have data
+        # Format: TIMESTAMP [LEVEL]  OSPS-XX-YY.ZZ: description
+        CONTROL_LINES=$(grep -E '\[INFO\].*OSPS-|\[WARN\].*OSPS-|\[ERROR\].*OSPS-' "$LOG_FILE" || true)
+
+        if [ -z "$CONTROL_LINES" ]; then
+          {
+            echo "## OSPS Baseline Assessment Results"
+            echo ""
+            echo "**Repository:** \`${OWNER}/${REPO}\` | **Catalog:** \`${CATALOG}\`"
+            echo ""
+            echo "No control results found in log output. Please re-run the workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
           exit 0
         fi
 
@@ -111,7 +131,7 @@ runs:
         WARNINGS=${WARNINGS:-0}
         FAILED=${FAILED:-0}
 
-        # Write markdown header
+        # Write markdown header and results
         {
           echo "## OSPS Baseline Assessment Results"
           echo ""
@@ -127,9 +147,7 @@ runs:
           echo "|:------:|---------|---------|"
         } >> "$GITHUB_STEP_SUMMARY"
 
-        # Parse individual control results from the log
-        # Format: TIMESTAMP [LEVEL]  OSPS-XX-YY.ZZ: description
-        grep -E '\[INFO\].*OSPS-|\ \[WARN\].*OSPS-|\[ERROR\].*OSPS-' "$LOG_FILE" | while IFS= read -r line; do
+        echo "$CONTROL_LINES" | while IFS= read -r line; do
           # Determine status icon from log level
           if echo "$line" | grep -q '\[ERROR\]'; then
             ICON=":x:"
@@ -141,12 +159,18 @@ runs:
 
           # Extract control ID and description
           CONTROL=$(echo "$line" | sed -n 's/.*\(OSPS-[A-Z]*-[0-9]*\.[0-9]*\).*/\1/p')
-          DESCRIPTION=$(echo "$line" | sed "s/.*${CONTROL}: //" )
+          DESCRIPTION=$(echo "$line" | sed "s/.*${CONTROL}: //")
 
           if [ -n "$CONTROL" ]; then
             echo "| ${ICON} | ${CONTROL} | ${DESCRIPTION} |" >> "$GITHUB_STEP_SUMMARY"
           fi
         done
+
+        # Fail the step if there are failed controls and fail-on-error is enabled
+        if [ "$FAIL_ON_ERROR" = "true" ] && [ "$FAILED" -gt 0 ]; then
+          echo "::error::OSPS Baseline assessment found ${FAILED} failed control(s)"
+          exit 1
+        fi
 
     - name: Prepare SARIF file for upload
       shell: bash
