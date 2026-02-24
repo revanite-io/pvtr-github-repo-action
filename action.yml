@@ -87,6 +87,67 @@ runs:
           -v ${{ github.workspace }}/evaluation_results:/.privateer/bin/evaluation_results \
           ghcr.io/ossf/pvtr-github-repo-scanner:latest
 
+    - name: Write results to workflow summary
+      shell: bash
+      env:
+        OWNER: ${{ inputs.owner }}
+        REPO: ${{ inputs.repo }}
+        CATALOG: ${{ inputs.catalog }}
+      run: |
+        LOG_FILE=$(find evaluation_results -name "*.log" -type f 2>/dev/null | head -1)
+        if [ -z "$LOG_FILE" ] || [ ! -f "$LOG_FILE" ]; then
+          echo "No log file found, skipping workflow summary"
+          exit 0
+        fi
+
+        # Extract the summary line (e.g. "pvtr_osps-baseline: 16 Passed, 0 Warnings, 0 Failed, 40 Possible")
+        SUMMARY_LINE=$(grep '> pvtr_' "$LOG_FILE" | sed 's/.*> //' || true)
+
+        # Parse counts from the summary line
+        PASSED=$(echo "$SUMMARY_LINE" | sed -n 's/.*\([0-9][0-9]*\) Passed.*/\1/p')
+        WARNINGS=$(echo "$SUMMARY_LINE" | sed -n 's/.*\([0-9][0-9]*\) Warnings.*/\1/p')
+        FAILED=$(echo "$SUMMARY_LINE" | sed -n 's/.*\([0-9][0-9]*\) Failed.*/\1/p')
+        PASSED=${PASSED:-0}
+        WARNINGS=${WARNINGS:-0}
+        FAILED=${FAILED:-0}
+
+        # Write markdown header
+        {
+          echo "## OSPS Baseline Assessment Results"
+          echo ""
+          echo "**Repository:** \`${OWNER}/${REPO}\` | **Catalog:** \`${CATALOG}\`"
+          echo ""
+          echo "| Passed | Warnings | Failed |"
+          echo "|:------:|:--------:|:------:|"
+          echo "| ${PASSED} | ${WARNINGS} | ${FAILED} |"
+          echo ""
+          echo "### Control Results"
+          echo ""
+          echo "| Status | Control | Finding |"
+          echo "|:------:|---------|---------|"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+        # Parse individual control results from the log
+        # Format: TIMESTAMP [LEVEL]  OSPS-XX-YY.ZZ: description
+        grep -E '\[INFO\].*OSPS-|\ \[WARN\].*OSPS-|\[ERROR\].*OSPS-' "$LOG_FILE" | while IFS= read -r line; do
+          # Determine status icon from log level
+          if echo "$line" | grep -q '\[ERROR\]'; then
+            ICON=":x:"
+          elif echo "$line" | grep -q '\[WARN\]'; then
+            ICON=":warning:"
+          else
+            ICON=":white_check_mark:"
+          fi
+
+          # Extract control ID and description
+          CONTROL=$(echo "$line" | sed -n 's/.*\(OSPS-[A-Z]*-[0-9]*\.[0-9]*\).*/\1/p')
+          DESCRIPTION=$(echo "$line" | sed "s/.*${CONTROL}: //" )
+
+          if [ -n "$CONTROL" ]; then
+            echo "| ${ICON} | ${CONTROL} | ${DESCRIPTION} |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+        done
+
     - name: Prepare SARIF file for upload
       shell: bash
       id: sarif
