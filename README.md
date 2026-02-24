@@ -57,12 +57,13 @@ jobs:
 ### Inputs
 
 | Input | Description | Required | Default |
-|-------|-------------|----------|---------|
+| ------- | ------------- | ---------- | --------- |
 | `owner` | Repository owner (organization or user) | Yes | - |
 | `repo` | Repository name | Yes | - |
 | `token` | GitHub Personal Access Token with repo read permissions | Yes | - |
 | `output-format` | Output format (`yaml`, `json`, or `sarif`) | No | `yaml` |
 | `upload-sarif` | Upload results as SARIF to GitHub Security tab. When `true`, `output-format` is automatically set to `sarif` | No | `false` |
+| `fail-on-error` | Fail the workflow if any controls have errors. When `false`, results are reported but the step always passes | No | `false` |
 
 ## Requirements
 
