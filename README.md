@@ -21,33 +21,33 @@ name: OSPS Security Assessment
 
 on:
   schedule:
-    - cron: "0 9 * * 1"  # Weekly on Mondays at 9 AM UTC
-  workflow_dispatch:  # Allow manual triggering
+    - cron: "0 9 * * 1" # Weekly on Mondays at 9 AM UTC
+  workflow_dispatch: # Allow manual triggering
 
 jobs:
   osps-assessment:
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
-      security-events: write  # Required for SARIF upload
-    
+      security-events: write # Required for SARIF upload
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-      
+        uses: actions/checkout@v6
+
       - name: Open Source Project Security Baseline Scanner
-        uses: revanite-io/osps-baseline-action@v1.0.0
+        uses: revanite-io/osps-baseline-action@v1.3.2
         with:
-            owner: ${{ github.repository_owner }}
-            repo: ${{ github.event.repository.name }}
-            token: ${{ secrets.PVTR_GITHUB_TOKEN }}
-            catalog: "osps-baseline"
-            upload-sarif: "true"
-      
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          token: ${{ secrets.PVTR_GITHUB_TOKEN }}
+          catalog: "osps-baseline-2026-02"
+          upload-sarif: "true"
+
       - name: Upload Assessment Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: osps-assessment-results-${{ github.run_number }}
           path: evaluation_results/
@@ -56,14 +56,33 @@ jobs:
 
 ### Inputs
 
-| Input | Description | Required | Default |
-| ------- | ------------- | ---------- | --------- |
-| `owner` | Repository owner (organization or user) | Yes | - |
-| `repo` | Repository name | Yes | - |
-| `token` | GitHub Personal Access Token with repo read permissions | Yes | - |
-| `output-format` | Output format (`yaml`, `json`, or `sarif`) | No | `yaml` |
-| `upload-sarif` | Upload results as SARIF to GitHub Security tab. When `true`, `output-format` is automatically set to `sarif` | No | `false` |
-| `fail-on-error` | Fail the workflow if any controls have errors. When `false`, results are reported but the step always passes | No | `false` |
+| Input           | Description                                                                                                                             | Required | Default                 |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------- |
+| `owner`         | Repository owner (organization or user)                                                                                                 | Yes      | -                       |
+| `repo`          | Repository name                                                                                                                         | Yes      | -                       |
+| `token`         | GitHub Personal Access Token with repo read permissions                                                                                 | Yes      | -                       |
+| `catalog`       | Catalog ID to assess against. This selects the OSPS Baseline release bundled in the scanner image (for example `osps-baseline-2026-02`) | No       | `osps-baseline-2026-02` |
+| `output-format` | Output format (`yaml`, `json`, or `sarif`)                                                                                              | No       | `yaml`                  |
+| `upload-sarif`  | Upload results as SARIF to GitHub Security tab. When `true`, `output-format` is automatically set to `sarif`                            | No       | `false`                 |
+| `fail-on-error` | Fail the workflow if any controls have errors. When `false`, results are reported but the step always passes                            | No       | `false`                 |
+
+### Catalog Input (`catalog`)
+
+The `catalog` input identifies which OSPS Baseline catalog version to run. Catalogs are versioned in the scanner and map to specific baseline releases.
+
+Examples:
+
+- `osps-baseline-2026-02` (current default in this action)
+- `osps-baseline-2025-10` (older baseline release)
+
+How to choose a compatible value:
+
+1. Pin your scanner image/source version.
+2. Use a catalog ID that exists in that scanner version.
+3. Prefer newer catalog IDs unless you need compatibility with older reporting.
+
+**NOTE:** If the catalog does not exist in the scanner version you run, the scan may produce empty results or no parsed control findings.
+Examples in this README use the latest tagged action release (`v1.3.2`). For production workflows, pin to a commit SHA for deterministic behavior.
 
 ## Requirements
 
