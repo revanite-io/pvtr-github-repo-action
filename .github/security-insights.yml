@@ -40,4 +40,5 @@ repository:
     url: "https://github.com/revanite-io/osps-baseline-action/blob/main/LICENSE"
   security:
     assessments:
-      - comment: "This project is itself an OSPS Baseline assessment tool"
+      self:
+        comment: "This project is itself an OSPS Baseline assessment tool"
