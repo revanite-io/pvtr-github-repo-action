@@ -31,4 +31,4 @@ jobs:
           owner: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          catalog: "osps-baseline"
+          catalog: "osps-baseline-2026-02"
