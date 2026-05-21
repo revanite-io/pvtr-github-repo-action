@@ -5,11 +5,18 @@ on:
   pull_request_target:
     types: [closed]
     branches: [main]
+
+permissions: {}
+
 jobs:
   release:
     permissions:
-      contents: write
-      pull-requests: read
+      contents: write       # Create release, tags, and draft release notes
+      pull-requests: read   # Read merged PRs for release-drafter changelog
+      packages: write       # Push container images to GHCR (if image-name set)
+      id-token: write       # OIDC token for build provenance attestations
+      attestations: write   # Write build provenance attestations
+      discussions: write    # Create release announcement discussion (if configured)
     uses: github-community-projects/ospo-reusable-workflows/.github/workflows/release.yaml@e92cb6053ace495fe40a5f185988557afcdcecbc
     with:
       publish: true
