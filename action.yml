@@ -89,7 +89,7 @@ runs:
         docker run --rm \
           -v /tmp/pvtr-config.yml:/.privateer/config.yml \
           -v ${{ github.workspace }}/evaluation_results:/.privateer/bin/evaluation_results \
-          ghcr.io/ossf/pvtr-github-repo-scanner:v0.27.0@sha256:32c63db5cd921e84ad6fb0a87fb14d2f35377904d7af5f1891fbb1937f4cf2eb
+          ghcr.io/ossf/pvtr-github-repo-scanner:v0.28.0@sha256:06ecbcd40f9ad6b54a252ed5bafb94a5dca4da5804bc32cd700955bb7768b92b
 
     - name: Write results to workflow summary
       shell: bash
