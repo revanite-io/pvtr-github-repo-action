@@ -64,6 +64,7 @@ jobs:
 | `catalog` | Catalog ID to assess against (OSPS Baseline release bundled in the scanner; e.g. `osps-baseline-2026-02`) | No | `osps-baseline-2026-02` |
 | `output-format` | Output format (`yaml`, `json`, or `sarif`) | No | `yaml` |
 | `upload-sarif` | Upload results as SARIF to GitHub Security tab. When `true`, `output-format` is automatically set to `sarif` | No | `false` |
+| `sarif-only-failures` | Upload only failed controls (error-level results) to GitHub Code Scanning. Needs-review and passed controls stay in the workflow summary and results files. Set to `false` to upload all results | No | `true` |
 | `fail-on-error` | Fail the workflow if any controls have errors. When `false`, results are reported but the step always passes | No | `false` |
 
 ### Catalog Input (`catalog`)
@@ -101,6 +102,16 @@ Your GitHub Personal Access Token needs **repository read permissions**. For pub
 - **YAML (Default)**: Human-readable format, suitable for local review and CI/CD pipelines
 - **JSON**: Machine-readable format, useful for programmatic processing and integration with other tools
 - **SARIF**: Static Analysis Results Interchange Format, connects results to GitHub's Security tab
+
+## Security Tab Alerts and "Needs Review" Controls
+
+The scanner marks controls it cannot fully verify as "Needs Review" and re-emits them on every scan by design (per [Gemara](https://gemara.openssf.org), final interpretation belongs to the audit phase). GitHub Code Scanning opens an alert for every uploaded SARIF result and only closes an alert when a later upload no longer contains it, so uploading "Needs Review" results creates alerts that never close.
+
+For that reason, by default (`sarif-only-failures: true`) only failed controls are uploaded to the Security tab. Failed-control alerts open when a control fails and auto-close once a later scan no longer reports the failure. "Needs Review" and passed controls remain in the workflow step summary and in the `evaluation_results` output files.
+
+If no controls failed, nothing is uploaded (GitHub rejects SARIF uploads with zero results) and the workflow summary is the place to review the assessment.
+
+Avoid dismissing "Needs Review" alerts from older uploads: the results carry no fingerprints, so a dismissed alert can mask a later genuine failure of the same control. Set `sarif-only-failures: false` to restore the old upload-everything behavior.
 
 ## FAQ
 
