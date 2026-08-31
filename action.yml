@@ -28,6 +28,10 @@ inputs:
     description: "Upload results as SARIF to GitHub Security tab. When true, output-format is automatically set to sarif"
     required: false
     default: "false"
+  sarif-only-failures:
+    description: "Upload only failed controls (error-level results) to GitHub Code Scanning. Needs-review and passed controls stay in the workflow summary and results files. Set to false to upload all results"
+    required: false
+    default: "true"
   fail-on-error:
     description: "Fail the workflow if any controls have errors. When false, results are reported but the step always passes"
     required: false
@@ -105,27 +109,10 @@ runs:
       shell: bash
       id: sarif
       if: inputs.upload-sarif == 'true'
-      continue-on-error: true
-      run: |
-        SARIF_FILE=$(find evaluation_results -name "*.sarif" -type f 2>/dev/null | head -1)
-        if [ -n "$SARIF_FILE" ] && [ -f "$SARIF_FILE" ]; then
-          # Validate that the SARIF file contains at least one result
-          # GitHub Code Scanning requires at least one result in runs[].results array
-          RESULT_COUNT=$(jq '[.runs[]?.results[]?] | length' "$SARIF_FILE" 2>/dev/null || echo "0")
-          if [ "$RESULT_COUNT" -gt 0 ]; then
-            echo "✅ SARIF file contains $RESULT_COUNT result(s)"
-            echo "sarif_file=$SARIF_FILE" >> $GITHUB_OUTPUT
-            echo "has_results=true" >> $GITHUB_OUTPUT
-          else
-            echo "⚠️  SARIF file exists but contains no results. GitHub Code Scanning requires at least one result."
-            echo "sarif_file=" >> $GITHUB_OUTPUT
-            echo "has_results=false" >> $GITHUB_OUTPUT
-          fi
-        else
-          echo "⚠️  No SARIF file found in evaluation_results directory"
-          echo "sarif_file=" >> $GITHUB_OUTPUT
-          echo "has_results=false" >> $GITHUB_OUTPUT
-        fi
+      env:
+        RESULTS_DIR: evaluation_results
+        SARIF_ONLY_FAILURES: ${{ inputs.sarif-only-failures }}
+      run: bash ${{ github.action_path }}/scripts/prepare-sarif.sh
 
     - name: Upload SARIF to GitHub Security tab
       if: inputs.upload-sarif == 'true' && steps.sarif.outputs.sarif_file != '' && steps.sarif.outputs.has_results == 'true'
